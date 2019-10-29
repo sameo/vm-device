@@ -6,17 +6,17 @@
 //! The high level flow of resource management among the VMM, the device manager, and the device
 //! is as below:
 //! 1) the VMM creates a new device object.
-//! 2) the VMM asks the new device object for its resource requirements.
-//! 3) the VMM allocates resources for the device object according to resource requirements.
+//! 2) the VMM asks the new device object for its resource constraints.
+//! 3) the VMM allocates resources for the device object according to resource constraints.
 //! 4) the VMM passes the allocated resources to the device object.
 //! 5) the VMM registers the new device onto corresponding device managers according the allocated
 //!    resources.
 
 use std::{u16, u32, u64};
 
-/// Enumeration describing a device's resource requirements.
+/// Enumeration describing a device's resource constraints.
 pub enum ResourceConstraint {
-    /// Request for an IO Port address range.
+    /// Constraint for an IO Port address range.
     PioAddress {
         /// Allocate resource within the range [`min`, `max`] if `min` is not u16::MAX.
         min: u16,
@@ -27,7 +27,7 @@ pub enum ResourceConstraint {
         /// Size for the allocated address range.
         size: u16,
     },
-    /// Request for a Memory Mapped IO address range.
+    /// Constraint for a Memory Mapped IO address range.
     MmioAddress {
         /// Allocate resource within the range [`min`, `max`] if 'min' is not u64::MAX.
         min: u64,
@@ -38,27 +38,27 @@ pub enum ResourceConstraint {
         /// Size for the allocated address range.
         size: u64,
     },
-    /// Request for a legacy IRQ.
+    /// Constraint for a legacy IRQ.
     LegacyIrq {
         /// Reserve the preallocated IRQ if it's not u32::MAX.
         fixed: u32,
     },
-    /// Request for PCI MSI IRQs.
+    /// Constraint for PCI MSI IRQs.
     PciMsiIrq {
         /// Number of Irqs to allocate.
         size: u32,
     },
-    /// Request for PCI MSIx IRQs.
+    /// Constraint for PCI MSIx IRQs.
     PciMsixIrq {
         /// Number of Irqs to allocate.
         size: u32,
     },
-    /// Request for generic IRQs.
+    /// Constraint for generic IRQs.
     GenericIrq {
         /// Number of Irqs to allocate.
         size: u32,
     },
-    /// Request for KVM mem_slot indexes to map memory into the guest.
+    /// Constraint for KVM mem_slot indexes to map memory into the guest.
     KvmMemSlot {
         /// Allocate the specified kvm memory slot index if it's not u32::MAX.
         fixed: u32,
@@ -68,7 +68,7 @@ pub enum ResourceConstraint {
 }
 
 impl ResourceConstraint {
-    /// Create a new Mmio address request object with default configuration.
+    /// Create a new Mmio address constraint object with default configuration.
     pub fn new_pio(size: u16) -> Self {
         ResourceConstraint::PioAddress {
             min: u16::MAX,
@@ -78,7 +78,7 @@ impl ResourceConstraint {
         }
     }
 
-    /// Create a new Mmio address request object with default configuration.
+    /// Create a new Mmio address constraint object with default configuration.
     pub fn new_mmio(size: u64) -> Self {
         ResourceConstraint::MmioAddress {
             min: u64::MAX,
@@ -88,12 +88,12 @@ impl ResourceConstraint {
         }
     }
 
-    /// Create a new legacy IRQ request object with default configuration.
+    /// Create a new legacy IRQ constraint object with default configuration.
     pub fn new_legacy_irq() -> Self {
         ResourceConstraint::LegacyIrq { fixed: u32::MAX }
     }
 
-    /// Create a new KVM memory slot request object with default configuration.
+    /// Create a new KVM memory slot constraint object with default configuration.
     pub fn new_kvm_mem_slot(size: u32) -> Self {
         ResourceConstraint::KvmMemSlot {
             fixed: u32::MAX,
