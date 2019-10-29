@@ -68,7 +68,7 @@ pub enum ResourceConstraint {
 }
 
 impl ResourceConstraint {
-    /// Create a new Mmio address constraint object with default configuration.
+    /// Create a new PIO address constraint object with default configuration.
     pub fn new_pio(size: u16) -> Self {
         ResourceConstraint::PioAddress {
             min: u16::MAX,
@@ -78,7 +78,7 @@ impl ResourceConstraint {
         }
     }
 
-    /// Create a new Mmio address constraint object with default configuration.
+    /// Create a new MMIO address constraint object with default configuration.
     pub fn new_mmio(size: u64) -> Self {
         ResourceConstraint::MmioAddress {
             min: u64::MAX,
