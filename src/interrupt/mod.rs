@@ -28,13 +28,13 @@
 //! in-band messages to replace traditional out-of-band assertion of dedicated interrupt lines.
 //! While more complex to implement in a device, message signaled interrupts have some significant
 //! advantages over pin-based out-of-band interrupt signaling. Message signaled interrupts are
-//! supported in PCI bus since its version 2.2, and in later available PCI Express bus. Some non-PCI
-//! architectures also use message signaled interrupts.
+//! supported in PCI bus since its version 2.2, and in later available PCI Express bus. Some
+//! non-PCI architectures also use message signaled interrupts.
 //!
 //! While IRQ is a term commonly used by Operating Systems when dealing with hardware
 //! interrupts, the IRQ numbers managed by OSes are independent of the ones managed by VMM.
-//! For simplicity sake, the term `Interrupt Source` is used instead of IRQ to represent both pin-based
-//! interrupts and MSI interrupts.
+//! For simplicity sake, the term `Interrupt Source` is used instead of IRQ to represent both
+//! pin-based interrupts and MSI interrupts.
 //!
 //! A device may support multiple types of interrupts, and each type of interrupt may support one
 //! or multiple interrupt sources. For example, a PCI device may support:
@@ -67,6 +67,9 @@ pub type Result<T> = std::io::Result<T>;
 pub type InterruptIndex = u32;
 
 /// Data type to store an interrupt source type.
+///
+/// The interrupt source type is a slim wrapper so that the `InterruptManager`
+/// can be implemented in external, non rust-vmm crates.
 pub type InterruptType = u32;
 
 pub const PIN_IRQ: InterruptType = 0;
@@ -124,6 +127,7 @@ pub trait InterruptSourceGroup: Send + Sync {
     fn trigger(&self, index: InterruptIndex) -> Result<()>;
 
     /// Returns an interrupt notifier from this interrupt.
+    ///
     /// An interrupt notifier allows for external components and processes
     /// to inject interrupts into a guest, by writing to the file returned
     /// by this method.
