@@ -118,10 +118,18 @@ pub struct MsiIrqSourceConfig {
 
 pub trait InterruptSourceGroup: Send + Sync {
     /// Enable the interrupt sources in the group to generate interrupts.
-    fn enable(&self) -> Result<()>;
+    fn enable(&self) -> Result<()> {
+        // Not all interrupt sources can be enabled.
+        // To accommodate this, we can have a no-op here.
+        Ok(())
+    }
 
     /// Disable the interrupt sources in the group to generate interrupts.
-    fn disable(&self) -> Result<()>;
+    fn disable(&self) -> Result<()> {
+        // Not all interrupt sources can be disabled.
+        // To accommodate this, we can have a no-op here.
+        Ok(())
+    }
 
     /// Inject an interrupt from this interrupt source into the guest.
     fn trigger(&self, index: InterruptIndex) -> Result<()>;
@@ -131,7 +139,12 @@ pub trait InterruptSourceGroup: Send + Sync {
     /// An interrupt notifier allows for external components and processes
     /// to inject interrupts into a guest, by writing to the file returned
     /// by this method.
-    fn notifier(&self, index: InterruptIndex) -> Option<File>;
+    #[allow(unused_variables)]
+    fn notifier(&self, index: InterruptIndex) -> Option<File> {
+        // One use case of the notifier is to implement vhost user backends.
+        // For all other implementations we can just return None here.
+        None
+    }
 }
 
 pub trait InterruptSourceGroupMsi: Send + Sync + InterruptSourceGroup {
