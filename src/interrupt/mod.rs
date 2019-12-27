@@ -91,7 +91,7 @@ pub trait InterruptManager {
     /// * base: base Interrupt Source ID to be managed by the group object.
     /// * count: number of Interrupt Sources to be managed by the group object.
     fn create_group(
-        &self,
+        &mut self,
         interrupt_type: InterruptType,
         base: InterruptIndex,
         count: InterruptIndex,
@@ -103,7 +103,7 @@ pub trait InterruptManager {
     /// Assume the caller takes the responsibility to disable all interrupt sources of the group
     /// before calling destroy_group(). This assumption helps to simplify InterruptSourceGroup
     /// implementations.
-    fn destroy_group(&self, group: Arc<Box<dyn InterruptSourceGroup>>) -> Result<()>;
+    fn destroy_group(&mut self, group: Arc<Box<dyn InterruptSourceGroup>>) -> Result<()>;
 }
 
 #[derive(Copy, Clone, Debug, Default)]
@@ -118,14 +118,14 @@ pub struct MsiIrqSourceConfig {
 
 pub trait InterruptSourceGroup: Send + Sync {
     /// Enable the interrupt sources in the group to generate interrupts.
-    fn enable(&self) -> Result<()> {
+    fn enable(&mut self) -> Result<()> {
         // Not all interrupt sources can be enabled.
         // To accommodate this, we can have a no-op here.
         Ok(())
     }
 
     /// Disable the interrupt sources in the group to generate interrupts.
-    fn disable(&self) -> Result<()> {
+    fn disable(&mut self) -> Result<()> {
         // Not all interrupt sources can be disabled.
         // To accommodate this, we can have a no-op here.
         Ok(())
@@ -153,5 +153,5 @@ pub trait InterruptSourceGroupMsi: Send + Sync + InterruptSourceGroup {
     /// # Arguments
     /// * index: sub-index into the group.
     /// * config: configuration data for the interrupt source.
-    fn update(&self, index: InterruptIndex, config: &MsiIrqSourceConfig) -> Result<()>;
+    fn update(&mut self, index: InterruptIndex, config: &MsiIrqSourceConfig) -> Result<()>;
 }
