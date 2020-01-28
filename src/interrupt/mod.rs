@@ -67,13 +67,15 @@ pub type Result<T> = std::io::Result<T>;
 pub type InterruptIndex = u32;
 
 /// Data type to store an interrupt source type.
-///
-/// The interrupt source type is a slim wrapper so that the `InterruptManager`
-/// can be implemented in external, non rust-vmm crates.
-pub type InterruptType = u32;
-
-pub const PIN_IRQ: InterruptType = 0;
-pub const PCI_MSI_IRQ: InterruptType = 1;
+#[derive(Copy, Clone, Debug)]
+pub enum InterruptSourceType {
+    /// Legacy Pin-based Interrupt.
+    /// On x86 platforms, legacy interrupts are routed through 8259 PICs and/or IOAPICs.
+    LegacyIrq,
+    /// Message Signaled Interrupt (PCI MSI/PCI MSIx).
+    /// Some non-PCI devices (like HPET on x86) make use of generic MSI in platform specific ways.
+    PciMsiIrq,
+}
 
 /// Trait to manage interrupt sources for virtual device backends.
 ///
@@ -92,7 +94,7 @@ pub trait InterruptManager {
     /// * count: number of Interrupt Sources to be managed by the group object.
     fn create_group(
         &mut self,
-        interrupt_type: InterruptType,
+        interrupt_type: InterruptSourceType,
         base: InterruptIndex,
         count: InterruptIndex,
     ) -> Result<Arc<Box<dyn InterruptSourceGroup>>>;
@@ -106,6 +108,15 @@ pub trait InterruptManager {
     fn destroy_group(&mut self, group: Arc<Box<dyn InterruptSourceGroup>>) -> Result<()>;
 }
 
+/// Configuration data for legacy interrupts.
+///
+/// On x86 platforms, legacy interrupts means those interrupts routed through PICs or IOAPICs.
+#[derive(Copy, Clone, Debug)]
+pub struct LegacyIrqSourceConfig {}
+
+/// Configuration data for MSI/MSI-X interrupts.
+///
+/// On x86 platforms, these interrupts are vectors delivered directly to the LAPIC.
 #[derive(Copy, Clone, Debug, Default)]
 pub struct MsiIrqSourceConfig {
     /// High address to delivery message signaled interrupt.
@@ -114,6 +125,15 @@ pub struct MsiIrqSourceConfig {
     pub low_addr: u32,
     /// Data to write to delivery message signaled interrupt.
     pub data: u32,
+}
+
+/// Configuration data for an interrupt source.
+#[derive(Copy, Clone, Debug)]
+pub enum InterruptSourceConfig {
+    /// Configuration data for Legacy interrupts.
+    LegacyIrq(LegacyIrqSourceConfig),
+    /// Configuration data for PciMsi, PciMsix and generic MSI interrupts.
+    MsiIrq(MsiIrqSourceConfig),
 }
 
 pub trait InterruptSourceGroup: Send + Sync {
@@ -132,6 +152,9 @@ pub trait InterruptSourceGroup: Send + Sync {
     }
 
     /// Inject an interrupt from this interrupt source into the guest.
+    ///
+    /// # Arguments
+    /// * index: sub-index into the group.
     fn trigger(&self, index: InterruptIndex) -> Result<()>;
 
     /// Returns an interrupt notifier from this interrupt.
@@ -145,13 +168,36 @@ pub trait InterruptSourceGroup: Send + Sync {
         // For all other implementations we can just return None here.
         None
     }
-}
 
-pub trait InterruptSourceGroupMsi: Send + Sync + InterruptSourceGroup {
     /// Update the interrupt source group configuration.
     ///
     /// # Arguments
     /// * index: sub-index into the group.
     /// * config: configuration data for the interrupt source.
-    fn update(&mut self, index: InterruptIndex, config: &MsiIrqSourceConfig) -> Result<()>;
+    fn update(&self, _index: InterruptIndex, _config: InterruptSourceConfig) -> Result<()> {
+        // Interrupt source group update is a typical MSI
+        // related operation. Most legacy interrupts don't
+        // support that.
+        Ok(())
+    }
+
+    /// Mask an interrupt from this interrupt source group.
+    ///
+    /// # Arguments
+    /// * index: sub-index into the group.
+    fn mask(&self, _index: InterruptIndex) -> Result<()> {
+        // Not all interrupt sources can be disabled.
+        // To accommodate this, we can have a no-op here.
+        Ok(())
+    }
+
+    /// Unmask an interrupt from this interrupt source group.
+    ///
+    /// # Arguments
+    /// * index: sub-index into the group.
+    fn unmask(&self, _index: InterruptIndex) -> Result<()> {
+        // Not all interrupt sources can be disabled.
+        // To accommodate this, we can have a no-op here.
+        Ok(())
+    }
 }
